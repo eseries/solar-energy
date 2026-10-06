@@ -1,0 +1,20 @@
+{
+  "expo": {
+    "name": "Solar Energy",
+    "slug": "solar-energy",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "solar-energy",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.solarenergy.mobile"
+    },
+    "android": {
+      "package": "com.solarenergy.mobile"
+    },
+    "plugins": [
+      "expo-secure-store"
+    ]
+  }
+}

@@ -1,0 +1,24 @@
+import type { Account, Bill, Customer, LedgerEntry, Meter, Page, Notification, Payment, Reading, Tariff, User } from './types';
+
+const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
+const tokenKey = 'solar_access_token';
+
+export class ApiError extends Error { constructor(public status: number, message: string) { super(message); } }
+export const tokenStore = { get: () => typeof window === 'undefined' ? null : localStorage.getItem(tokenKey), set: (v: string) => localStorage.setItem(tokenKey, v), clear: () => localStorage.removeItem(tokenKey) };
+
+export async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const headers = new Headers(options.headers);
+  headers.set('Accept', 'application/json');
+  if (options.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
+  const token = tokenStore.get(); if (token) headers.set('Authorization', `Bearer ${token}`);
+  let response: Response;
+  try { response = await fetch(`${baseUrl}${path}`, { ...options, headers, cache: 'no-store' }); } catch { throw new ApiError(0, 'Unable to reach the API. Check that the backend is running.'); }
+  const body = await response.json().catch(() => null);
+  if (!response.ok) { const message = body?.message; throw new ApiError(response.status, Array.isArray(message) ? message.join(', ') : message || 'The request failed.'); }
+  return body as T;
+}
+export const get = <T>(path: string) => api<T>(path);
+export const send = <T>(path: string, method: string, body: unknown) => api<T>(path, { method, body: JSON.stringify(body) });
+export const authApi = { login: (email: string, password: string) => send<{ accessToken: string; user: User }>('/auth/login', 'POST', { email, password }), me: () => get<User>('/auth/me') };
+export const endpoints = { reading: (id: string) => get<Reading>('/meter-readings/' + id), updateReading: (id: string, x: unknown) => send<Reading>(`/meter-readings/${id}`, 'PATCH', x), meter: (id: string) => get<Meter>('/meters/' + id), customerMe: () => get<Customer>('/customer/me'), customerAccount: () => get<Account>('/customer/me/account'), customerBills: (q = '') => get<Page<Bill>>('/customer/me/bills'+q), customerBill: (id: string) => get<Bill>(`/customer/me/bills/${id}`), customerPayments: (q = '') => get<Page<Payment>>('/customer/me/payments'+q), customerPayment: (id: string) => get<Payment>(`/customer/me/payments/${id}`), customerLedger: (q = '') => get<Page<LedgerEntry>>('/customer/me/ledger'+q), customerReadings: (q = '') => get<Page<Reading>>('/customer/me/readings'+q), customerNotifications: () => get<Notification[]>('/notifications'), markCustomerNotificationRead: (id: string) => send<Notification>(`/notifications/${id}/read`, 'PATCH', {}), initializePayment: (billId: string) => send<unknown>('/payments/initialize', 'POST', { billId }), customers: (q = '') => get<Page<Customer>>(`/customers${q}`), customer: (id: string) => get<Customer>(`/customers/${id}`), createCustomer: (x: unknown) => send<Customer>('/customers', 'POST', x), updateCustomer: (id: string, x: unknown) => send<Customer>(`/customers/${id}`, 'PATCH', x), deactivateCustomer: (id: string) => send<Customer>(`/customers/${id}`, 'DELETE', {}), meters: (q = '') => get<Page<Meter>>(`/meters${q}`), createMeter: (x: unknown) => send<Meter>('/meters', 'POST', x), updateMeter: (id: string, x: unknown) => send<Meter>(`/meters/${id}`, 'PATCH', x), deactivateMeter: (id: string) => send<Meter>(`/meters/${id}`, 'DELETE', {}), readings: (q = '') => get<Page<Reading>>(`/meter-readings${q}`), createReading: (x: unknown) => send<Reading>('/meter-readings', 'POST', x), deleteReading: (id: string) => send<Reading>(`/meter-readings/${id}`, 'DELETE', {}), tariffs: (q = '') => get<Page<Tariff>>(`/tariffs${q}`), createTariff: (x: unknown) => send<Tariff>('/tariffs', 'POST', x), updateTariff: (id: string, x: unknown) => send<Tariff>(`/tariffs/${id}`, 'PATCH', x), deactivateTariff: (id: string) => send<Tariff>(`/tariffs/${id}`, 'DELETE', {}), bills: (q = '') => get<Page<Bill>>(`/bills${q}`), bill: (id: string) => get<Bill>(`/bills/${id}`), createBill: (x: unknown) => send<Bill>('/bills', 'POST', x), payments: (q = '') => get<Page<Payment>>(`/payments${q}`), payment: (id: string) => get<Payment>(`/payments/${id}`), notifications: (q = '') => get<Page<Notification>>(`/notifications/admin${q}`), notification: (id: string) => get<Notification>(`/notifications/admin/${id}`), accounts: (q = '') => get<Page<Account>>(`/accounts${q}`), account: (id: string) => get<Account>(`/accounts/${id}`), ledger: (id: string, q = '') => get<Page<LedgerEntry>>(`/ledger/${id}${q}`) };
+export const onboardingApi = { get: (id: string) => get<Customer>(`/customers/${id}/onboarding`), associate: (id: string, userId: string) => send<Customer>(`/customers/${id}/user`, 'POST', { userId }) };

@@ -1,0 +1,19 @@
+{
+  "name": "solar-energy",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "dev": "npm run dev --workspaces --if-present",
+    "build": "npm run build --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "format": "prettier --write .",
+    "db:generate": "npm run prisma:generate -w @solar-energy/database",
+    "db:validate": "npm run prisma:validate -w @solar-energy/database",
+    "db:format": "npm run prisma:format -w @solar-energy/database",
+    "dev:web": "npm run dev -w @solar-energy/web",
+    "dev:api": "npm run dev -w @solar-energy/api",
+    "dev:mobile": "npm run start -w @solar-energy/mobile"
+  },
+  "devDependencies": {"prettier": "^3.6.2"}
+}

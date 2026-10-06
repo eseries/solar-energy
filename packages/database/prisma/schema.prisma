@@ -1,0 +1,317 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  // SQLite is the active provider for local development in Milestone 1.
+  // Production can use PostgreSQL by switching this provider and DATABASE_URL
+  // in the deployment-specific Prisma configuration in a later milestone.
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  STAFF
+  CUSTOMER
+}
+
+enum CustomerStatus {
+  ACTIVE
+  SUSPENDED
+  INACTIVE
+}
+
+enum BillingMode {
+  PREPAID
+  POSTPAID
+}
+
+enum MeterType {
+  MANUAL
+  SMART
+}
+
+enum MeterStatus {
+  ACTIVE
+  INACTIVE
+  FAULTY
+  REPLACED
+}
+
+enum ReadingSource {
+  MANUAL
+  AUTOMATIC
+}
+
+enum BillStatus {
+  PENDING
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  PAYSTACK
+  OTHER
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REVERSED
+}
+
+enum LedgerEntryType {
+  CREDIT
+  DEBIT
+  PAYMENT
+  CHARGE
+  REFUND
+  ADJUSTMENT
+}
+
+enum EnergySourceType {
+  SOLAR
+  BATTERY
+  GRID
+  GENERATOR
+  OTHER
+}
+
+enum EnergySourceStatus {
+  ACTIVE
+  INACTIVE
+  MAINTENANCE
+}
+
+enum NotificationType {
+  BILLING
+  PAYMENT
+  METER
+  SYSTEM
+  OTHER
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  READ
+}
+
+model User {
+  id            String         @id @default(uuid())
+  name          String
+  email         String         @unique
+  passwordHash  String
+  role          UserRole       @default(STAFF)
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  customers     Customer[]
+  readings      MeterReading[]
+  notifications Notification[]
+  auditLogs     AuditLog[]
+}
+
+model Customer {
+  id             String         @id @default(uuid())
+  userId         String?
+  customerNumber String         @unique
+  name           String
+  email          String?
+  phone          String?
+  address        String?
+  status         CustomerStatus @default(ACTIVE)
+  billingMode    BillingMode    @default(POSTPAID)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  user           User?          @relation(fields: [userId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  meters         Meter[]
+  bills          Bill[]
+  payments       Payment[]
+  account        Account?
+  notifications  Notification[]
+
+  @@index([userId])
+  @@index([status])
+}
+
+model Meter {
+  id          String         @id @default(uuid())
+  meterNumber String         @unique
+  customerId  String
+  meterType   MeterType      @default(MANUAL)
+  status      MeterStatus    @default(ACTIVE)
+  installedAt DateTime
+  replacedAt  DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  customer    Customer       @relation(fields: [customerId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  readings    MeterReading[]
+  bills       Bill[]
+
+  @@index([customerId])
+  @@index([status])
+}
+
+model MeterReading {
+  id         String        @id @default(uuid())
+  meterId    String
+  reading    Float
+  readingAt  DateTime
+  source     ReadingSource @default(MANUAL)
+  recordedBy String?
+  createdAt  DateTime      @default(now())
+  meter      Meter         @relation(fields: [meterId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  recorder   User?         @relation(fields: [recordedBy], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@unique([meterId, readingAt])
+  @@index([meterId, readingAt])
+  @@index([readingAt])
+}
+
+model Tariff {
+  id            String    @id @default(uuid())
+  name          String
+  pricePerKwh   Decimal
+  effectiveFrom DateTime
+  effectiveTo   DateTime?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  bills         Bill[]
+
+  @@index([effectiveFrom, effectiveTo])
+  @@index([isActive])
+}
+
+model Bill {
+  id                 String     @id @default(uuid())
+  billNumber         String     @unique
+  customerId         String
+  meterId            String
+  tariffId           String
+  billingPeriodStart DateTime
+  billingPeriodEnd   DateTime
+  previousReading    Float
+  currentReading     Float
+  consumptionKwh     Float
+  unitPrice          Decimal
+  subtotal           Decimal
+  amount             Decimal
+  status             BillStatus @default(PENDING)
+  dueDate            DateTime
+  paidAt             DateTime?
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+  customer           Customer   @relation(fields: [customerId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  meter              Meter      @relation(fields: [meterId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  tariff             Tariff     @relation(fields: [tariffId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  payments           Payment[]
+
+  @@index([customerId, billingPeriodStart, billingPeriodEnd])
+  @@index([meterId, billingPeriodStart, billingPeriodEnd])
+  @@index([tariffId])
+  @@index([status, dueDate])
+}
+
+model Payment {
+  id         String        @id @default(uuid())
+  customerId String
+  billId     String?
+  reference  String        @unique
+  amount     Decimal
+  currency   String        @default("NGN")
+  method     PaymentMethod
+  status     PaymentStatus @default(PENDING)
+  paidAt     DateTime?
+  metadata   String?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  customer   Customer      @relation(fields: [customerId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  bill       Bill?         @relation(fields: [billId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([customerId, createdAt])
+  @@index([billId])
+  @@index([status])
+}
+
+model Account {
+  id         String        @id @default(uuid())
+  customerId String        @unique
+  balance    Decimal       @default(0)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  customer   Customer      @relation(fields: [customerId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  entries    LedgerEntry[]
+}
+
+model LedgerEntry {
+  id            String          @id @default(uuid())
+  accountId     String
+  type          LedgerEntryType
+  amount        Decimal
+  balanceBefore Decimal
+  balanceAfter  Decimal
+  reference     String?
+  description   String?
+  createdAt     DateTime        @default(now())
+  account       Account         @relation(fields: [accountId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([accountId, createdAt])
+  @@index([type])
+  @@index([reference])
+  @@unique([type, reference])
+}
+
+model EnergySource {
+  id         String             @id @default(uuid())
+  name       String
+  type       EnergySourceType
+  capacityKw Float?
+  status     EnergySourceStatus @default(ACTIVE)
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+
+  @@index([type])
+  @@index([status])
+}
+
+model Notification {
+  id         String             @id @default(uuid())
+  customerId String?
+  userId     String?
+  type       NotificationType
+  title      String
+  message    String
+  status     NotificationStatus @default(PENDING)
+  createdAt  DateTime           @default(now())
+  sentAt     DateTime?
+  customer   Customer?          @relation(fields: [customerId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  user       User?              @relation(fields: [userId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([customerId])
+  @@index([userId])
+  @@index([status, createdAt])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  action    String
+  entity    String
+  entityId  String
+  metadata  String?
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([userId])
+  @@index([entity, entityId])
+  @@index([createdAt])
+}

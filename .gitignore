@@ -1,0 +1,37 @@
+node_modules/
+.next/
+dist/
+coverage/
+.env
+.env.*
+!.env.example
+
+# Expo / React Native local state and build output
+.expo/
+.expo-shared/
+web-build/
+
+# Databases and SQLite temporary files
+*.db
+*.db-journal
+*.db-*
+*.sqlite
+*.sqlite3
+*.sqlite-*
+
+# Logs and local reports
+*.log
+*.log.*
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Tool caches and local build metadata
+.cache/
+.turbo/
+*.tsbuildinfo
