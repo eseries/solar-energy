@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "0c782f87-c81b-4114-8592-b16f396f9cbf"
+      }
+    },
+    "android": {
+      "package": "com.edditor.solarenergy"
+    }
+  }
+}

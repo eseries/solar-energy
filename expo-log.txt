@@ -1,0 +1,26 @@
+Starting Metro Bundler
+
+warning: Bundler cache is empty, rebuilding (this may take a minute)
+Android Bundling failed 1319ms node_modules/expo/AppEntry.js (1 module)
+
+Error: Unable to resolve module ../../App from /Users/macbook/solar-energy/node_modules/expo/AppEntry.js: 
+
+None of these files exist:
+  * App(.android.ts|.native.ts|.ts|.android.tsx|.native.tsx|.tsx|.android.mjs|.native.mjs|.mjs|.android.js|.native.js|.js|.android.jsx|.native.jsx|.jsx|.android.json|.native.json|.json|.android.cjs|.native.cjs|.cjs|.android.scss|.native.scss|.scss|.android.sass|.native.sass|.sass|.android.css|.native.css|.css)
+  * App
+[0m [90m 1 |[39m [36mimport[39m registerRootComponent [36mfrom[39m [32m'expo/src/launch/registerRootComponent'[39m[33m;[39m
+ [90m 2 |[39m
+[31m[1m>[22m[39m[90m 3 |[39m [36mimport[39m [33mApp[39m [36mfrom[39m [32m'../../App'[39m[33m;[39m
+ [90m   |[39m                  [31m[1m^[22m[39m
+ [90m 4 |[39m
+ [90m 5 |[39m registerRootComponent([33mApp[39m)[33m;[39m
+ [90m 6 |[39m[0m
+
+Import stack:
+
+ node_modules/expo/AppEntry.js
+ | import "../../App"
+
+ 
+ | import "./node_modules/expo/AppEntry"
+
