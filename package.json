@@ -2,9 +2,13 @@
   "name": "solar-energy",
   "private": true,
   "version": "0.1.0",
-  "workspaces": ["apps/*", "packages/*"],
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "dev": "npm run dev --workspaces --if-present",
+    "test": "echo \"No tests yet\" && exit 0",
     "build": "npm run build --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "format": "prettier --write .",
@@ -15,5 +19,10 @@
     "dev:api": "npm run dev -w @solar-energy/api",
     "dev:mobile": "npm run start -w @solar-energy/mobile"
   },
-  "devDependencies": {"prettier": "^3.6.2"}
+  "devDependencies": {
+    "prettier": "^3.6.2"
+  },
+  "dependencies": {
+    "expo-updates": "~57.0.25"
+  }
 }
